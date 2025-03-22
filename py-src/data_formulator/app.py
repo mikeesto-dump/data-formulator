@@ -155,6 +155,7 @@ def get_datasets(path):
 @app.route('/check-available-models', methods=['GET', 'POST'])
 def check_available_models():
     results = []
+    default_model = None
     
     # Define configurations for different providers
     providers = ['openai', 'azure', 'anthropic', 'gemini', 'ollama']
@@ -201,10 +202,12 @@ def check_available_models():
                 
                 if "I can hear you." in response.choices[0].message.content:
                     results.append(model_config)
+                    if default_model is None:
+                        default_model = model_config
             except Exception as e:
                 print(f"Error testing {provider} model {model}: {e}")
                 
-    return json.dumps(results)
+    return json.dumps({"models": results, "default_model": default_model})
 
 @app.route('/test-model', methods=['GET', 'POST'])
 def test_model():

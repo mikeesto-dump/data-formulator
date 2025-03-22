@@ -110,7 +110,7 @@ export const ModelSelectionButton: React.FC<{}> = ({ }) => {
             setIsLoadingModelOptions(true);
             try {
                 const response = await fetch(getUrls().CHECK_AVAILABLE_MODELS);
-                const data = await response.json();
+                const {models} = await response.json();
                 
                 // Group models by provider
                 const modelsByProvider: {[key: string]: string[]} = {
@@ -121,7 +121,7 @@ export const ModelSelectionButton: React.FC<{}> = ({ }) => {
                     'ollama': []
                 };
                 
-                data.forEach((modelConfig: any) => {
+                models.forEach((modelConfig: any) => {
                     const provider = modelConfig.endpoint;
                     const model = modelConfig.model;
 
@@ -506,6 +506,12 @@ export const ModelSelectionButton: React.FC<{}> = ({ }) => {
                 </TableBody>
             </Table>
     </TableContainer>
+
+    const defaultModelSelected = selectedModelId !== undefined && models.length > 0;
+
+    if (defaultModelSelected) {
+        return null;
+    }
 
     return <>
         <Tooltip title="select model">

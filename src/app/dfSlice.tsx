@@ -224,7 +224,7 @@ export const fetchAvailableModels = createAsyncThunk(
 
         let response = await fetch(getUrls().CHECK_AVAILABLE_MODELS, {...message, signal: controller.signal })
 
-        return response.json();
+        return response.json() as Promise<{models: ModelConfig[], default_model: ModelConfig | null}>;
     }
 );
   
@@ -291,8 +291,13 @@ export const dataFormulatorSlice = createSlice({
         setConfig: (state, action: PayloadAction<{formulateTimeoutSeconds: number, maxRepairAttempts: number}>) => {
             state.config = action.payload;
         },
-        selectModel: (state, action: PayloadAction<string | undefined>) => {
-            state.selectedModelId = action.payload;
+        selectModel: (state, action: PayloadAction<string | ModelConfig | undefined>) => {
+            if (typeof action.payload === 'string' || action.payload === undefined) {
+                state.selectedModelId = action.payload;
+            } else {
+                // If it's a ModelConfig object, set the ID
+                state.selectedModelId = action.payload.id;
+            }
         },
         addModel: (state, action: PayloadAction<ModelConfig>) => {
             state.models = [...state.models, action.payload];
@@ -657,24 +662,24 @@ export const dataFormulatorSlice = createSlice({
             }
         })
         .addCase(fetchAvailableModels.fulfilled, (state, action) => {
-            let defaultModels = action.payload;
+            let { models, default_model } = action.payload;
 
-            state.models = [
-                ...defaultModels, 
-                ...state.models.filter(e => !defaultModels.map((m: ModelConfig) => m.endpoint).includes(e.endpoint))
+            state.models = [...models]; // Update models
+            state.testedModels = [
+                ...models.map((m: ModelConfig) => { return { id: m.id, status: 'ok' } }),
             ];
-            
-            state.testedModels = [ 
-                ...defaultModels.map((m: ModelConfig) => {return {id: m.id, status: 'ok'}}) ,
-                ...state.testedModels.filter(t => !defaultModels.map((m: ModelConfig) => m.id).includes(t.id))
-            ]
 
-            if (state.selectedModelId == undefined && defaultModels.length > 0) {
-                state.selectedModelId = defaultModels[0].id;
+            // Automatically select the default model if available
+            if (default_model) {
+              state.selectedModelId = default_model.id;
+            } else if (state.selectedModelId == undefined && models.length > 0) {
+                state.selectedModelId = models[0].id;  // Fallback to the first, if no default.
             }
 
             console.log("load model complete");
             console.log("state.models", state.models);
+            console.log("default_model", default_model); // Log for debugging
+            console.log('hellloooooooo')
         })
         .addCase(fetchCodeExpl.fulfilled, (state, action) => {
             let codeExpl = action.payload;
